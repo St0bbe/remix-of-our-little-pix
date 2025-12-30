@@ -13,12 +13,15 @@ import { SharedView } from '@/components/SharedView';
 import { StatsView } from '@/components/StatsView';
 import { Slideshow } from '@/components/Slideshow';
 import { EditPhotoModal } from '@/components/EditPhotoModal';
+import { BackupExport } from '@/components/BackupExport';
+import { PrintMode } from '@/components/PrintMode';
 import { usePhotos } from '@/hooks/usePhotos';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Photo, PhotoCategory } from '@/types/photo';
-import { Plus, Camera, Heart, Grid, Clock, FolderHeart, Download, Settings, LogOut, Star, BarChart3, Play } from 'lucide-react';
+import { Plus, Camera, Heart, Grid, Clock, FolderHeart, Download, Settings, LogOut, Star, BarChart3, Play, MoreHorizontal, FileArchive, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
 
@@ -45,6 +48,8 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('gallery');
   const [isSlideshowOpen, setIsSlideshowOpen] = useState(false);
   const [slideshowStartIndex, setSlideshowStartIndex] = useState(0);
+  const [isBackupOpen, setIsBackupOpen] = useState(false);
+  const [isPrintModeOpen, setIsPrintModeOpen] = useState(false);
 
   // Check for shared link
   const [sharedContent, setSharedContent] = useState<ReturnType<typeof getSharedContent>>(null);
@@ -239,26 +244,46 @@ const Index = () => {
                   Baixar ({selectedPhotos.size})
                 </Button>
               )}
+              {selectionMode && selectedPhotos.size > 0 && (
+                <Button size="lg" variant="outline" onClick={() => setIsPrintModeOpen(true)}>
+                  <Printer className="w-5 h-5 mr-2" />
+                  Imprimir ({selectedPhotos.size})
+                </Button>
+              )}
             </>
           )}
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => setIsPasswordSettingsOpen(true)}
-          >
-            <Settings className="w-5 h-5 mr-2" />
-            Senha
-          </Button>
-          {hasPassword && (
-            <Button
-              size="lg"
-              variant="ghost"
-              onClick={logout}
-            >
-              <LogOut className="w-5 h-5 mr-2" />
-              Sair
-            </Button>
-          )}
+          
+          {/* More options dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="lg" variant="outline">
+                <MoreHorizontal className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setIsBackupOpen(true)}>
+                <FileArchive className="w-4 h-4 mr-2" />
+                Exportar Backup
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setSelectionMode(false);
+                setIsPrintModeOpen(true);
+              }} disabled={photos.length === 0}>
+                <Printer className="w-4 h-4 mr-2" />
+                Modo Impressão
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsPasswordSettingsOpen(true)}>
+                <Settings className="w-4 h-4 mr-2" />
+                Configurar Senha
+              </DropdownMenuItem>
+              {hasPassword && (
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sair
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Tabs */}
@@ -398,6 +423,22 @@ const Index = () => {
         isOpen={isSlideshowOpen}
         onClose={() => setIsSlideshowOpen(false)}
         startIndex={slideshowStartIndex}
+      />
+
+      <BackupExport
+        isOpen={isBackupOpen}
+        onClose={() => setIsBackupOpen(false)}
+        photos={photos}
+        albums={albums}
+      />
+
+      <PrintMode
+        photos={selectionMode && selectedPhotos.size > 0 
+          ? photos.filter(p => selectedPhotos.has(p.id)) 
+          : photos
+        }
+        isOpen={isPrintModeOpen}
+        onClose={() => setIsPrintModeOpen(false)}
       />
     </div>
   );
