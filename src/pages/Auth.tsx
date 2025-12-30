@@ -65,6 +65,16 @@ const Auth = () => {
     return true;
   };
 
+  const checkEmailAllowed = async (emailToCheck: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('allowed_emails')
+      .select('email')
+      .eq('email', emailToCheck.toLowerCase().trim())
+      .maybeSingle();
+    
+    return !!data && !error;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -78,6 +88,18 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
+      // Check if email is allowed (for signin and signup)
+      if (mode === 'signin' || mode === 'signup') {
+        const isAllowed = await checkEmailAllowed(email);
+        if (!isAllowed) {
+          setError('Este email não tem permissão para acessar o sistema');
+          setIsShaking(true);
+          setTimeout(() => setIsShaking(false), 500);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
