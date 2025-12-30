@@ -8,9 +8,12 @@ interface PhotoGridProps {
   photos: Photo[];
   onDelete: (id: string) => void;
   onView: (photo: Photo) => void;
+  selectionMode?: boolean;
+  selectedPhotos?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
-export const PhotoGrid = ({ photos, onDelete, onView }: PhotoGridProps) => {
+export const PhotoGrid = ({ photos, onDelete, onView, selectionMode, selectedPhotos, onToggleSelect }: PhotoGridProps) => {
   if (photos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
@@ -27,12 +30,9 @@ export const PhotoGrid = ({ photos, onDelete, onView }: PhotoGridProps) => {
     );
   }
 
-  // Group photos by month
   const groupedPhotos = photos.reduce((acc, photo) => {
     const monthKey = photo.date.substring(0, 7);
-    if (!acc[monthKey]) {
-      acc[monthKey] = [];
-    }
+    if (!acc[monthKey]) acc[monthKey] = [];
     acc[monthKey].push(photo);
     return acc;
   }, {} as Record<string, Photo[]>);
@@ -59,6 +59,9 @@ export const PhotoGrid = ({ photos, onDelete, onView }: PhotoGridProps) => {
                     photo={photo}
                     onDelete={onDelete}
                     onView={onView}
+                    selectionMode={selectionMode}
+                    isSelected={selectedPhotos?.has(photo.id)}
+                    onToggleSelect={onToggleSelect}
                   />
                 ))}
             </div>

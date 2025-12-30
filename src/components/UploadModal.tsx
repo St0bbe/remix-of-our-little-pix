@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PhotoCategory, categoryLabels } from '@/types/photo';
+import { PhotoCategory, categoryLabels, Album } from '@/types/photo';
 import { Upload, X, Image, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -16,21 +17,29 @@ interface UploadModalProps {
     date: string;
     category: PhotoCategory;
     childName: string;
+    title?: string;
+    description?: string;
+    albumId?: string;
   }>) => void;
   existingChildren: string[];
+  albums: Album[];
 }
 
 interface PendingPhoto {
   file: File;
   preview: string;
+  title: string;
+  description: string;
 }
 
-export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren }: UploadModalProps) => {
+export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren, albums }: UploadModalProps) => {
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [category, setCategory] = useState<PhotoCategory>('sozinha');
   const [childName, setChildName] = useState('');
+  const [albumId, setAlbumId] = useState<string>('none');
   const [isNewChild, setIsNewChild] = useState(existingChildren.length === 0);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,6 +51,8 @@ export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren }: Upl
         setPendingPhotos(prev => [...prev, {
           file,
           preview: event.target?.result as string,
+          title: '',
+          description: '',
         }]);
       };
       reader.readAsDataURL(file);
@@ -50,6 +61,13 @@ export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren }: Upl
 
   const removePhoto = (index: number) => {
     setPendingPhotos(prev => prev.filter((_, i) => i !== index));
+    if (editingIndex === index) setEditingIndex(null);
+  };
+
+  const updatePhotoDetails = (index: number, updates: Partial<PendingPhoto>) => {
+    setPendingPhotos(prev => prev.map((p, i) => 
+      i === index ? { ...p, ...updates } : p
+    ));
   };
 
   const handleSubmit = () => {
@@ -68,6 +86,9 @@ export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren }: Upl
       date,
       category,
       childName: childName.trim(),
+      title: p.title || undefined,
+      description: p.description || undefined,
+      albumId: albumId !== 'none' ? albumId : undefined,
     }));
 
     onUpload(photos);
@@ -78,17 +99,20 @@ export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren }: Upl
     setDate(new Date().toISOString().split('T')[0]);
     setCategory('sozinha');
     setChildName('');
+    setAlbumId('none');
+    setEditingIndex(null);
     onClose();
   };
 
   const handleClose = () => {
     setPendingPhotos([]);
+    setEditingIndex(null);
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">Adicionar Fotos</DialogTitle>
         </DialogHeader>
@@ -112,30 +136,69 @@ export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren }: Upl
             <p className="text-sm text-muted-foreground mt-1">ou arraste e solte aqui</p>
           </div>
 
-          {/* Preview Grid */}
+          {/* Preview Grid with Edit Option */}
           {pendingPhotos.length > 0 && (
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-              {pendingPhotos.map((photo, index) => (
-                <div key={index} className="relative aspect-square rounded-lg overflow-hidden group">
-                  <img
-                    src={photo.preview}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    onClick={() => removePhoto(index)}
-                    className="absolute top-1 right-1 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Clique em uma foto para adicionar título e descrição
+              </p>
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                {pendingPhotos.map((photo, index) => (
+                  <div 
+                    key={index} 
+                    className={`relative aspect-square rounded-lg overflow-hidden group cursor-pointer ring-2 transition-all ${
+                      editingIndex === index ? 'ring-primary' : 'ring-transparent hover:ring-primary/50'
+                    }`}
+                    onClick={() => setEditingIndex(editingIndex === index ? null : index)}
                   >
-                    <X className="w-4 h-4" />
-                  </button>
+                    <img
+                      src={photo.preview}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    {photo.title && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-foreground/70 text-primary-foreground text-xs p-1 truncate">
+                        {photo.title}
+                      </div>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removePhoto(index);
+                      }}
+                      className="absolute top-1 right-1 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="aspect-square rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
+                >
+                  <Plus className="w-8 h-8 text-muted-foreground" />
                 </div>
-              ))}
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="aspect-square rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
-              >
-                <Plus className="w-8 h-8 text-muted-foreground" />
               </div>
+
+              {/* Edit Selected Photo */}
+              {editingIndex !== null && (
+                <div className="bg-secondary/50 rounded-xl p-4 space-y-3 animate-scale-in">
+                  <h4 className="font-medium text-sm">Detalhes da Foto {editingIndex + 1}</h4>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Título (ex: Primeiro sorriso)"
+                      value={pendingPhotos[editingIndex].title}
+                      onChange={(e) => updatePhotoDetails(editingIndex, { title: e.target.value })}
+                    />
+                    <Textarea
+                      placeholder="Descrição (ex: Foi nesse dia que ela riu pela primeira vez...)"
+                      value={pendingPhotos[editingIndex].description}
+                      onChange={(e) => updatePhotoDetails(editingIndex, { description: e.target.value })}
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -168,8 +231,26 @@ export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren }: Upl
               </Select>
             </div>
 
+            {/* Album */}
+            <div className="space-y-2">
+              <Label>Álbum (opcional)</Label>
+              <Select value={albumId} onValueChange={setAlbumId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um álbum" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {albums.map((album) => (
+                    <SelectItem key={album.id} value={album.id}>
+                      {album.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Child Name */}
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <Label>Nome do Filho(a)</Label>
               {existingChildren.length > 0 && !isNewChild ? (
                 <div className="flex gap-2">
