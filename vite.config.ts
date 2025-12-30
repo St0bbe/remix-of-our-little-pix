@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  base: '/remix-of-our-little-pix/', // ← ADICIONE ESTA LINHA AQUI (importante!)
+  base: "/remix-of-our-little-pix/", // ← DEVE ESTAR AQUI (no objeto principal)
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
