@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PhotoFilters } from '@/components/PhotoFilters';
 import { PhotoGrid } from '@/components/PhotoGrid';
@@ -7,7 +8,6 @@ import { PhotoViewer } from '@/components/PhotoViewer';
 import { AlbumGrid } from '@/components/AlbumGrid';
 import { CreateAlbumModal } from '@/components/CreateAlbumModal';
 import { TimelineView } from '@/components/TimelineView';
-import { LoginScreen } from '@/components/LoginScreen';
 import { PasswordSettings } from '@/components/PasswordSettings';
 import { SharedView } from '@/components/SharedView';
 import { StatsView } from '@/components/StatsView';
@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import JSZip from 'jszip';
 
 const Index = () => {
+  const navigate = useNavigate();
   const { 
     photos, albums, children, activities,
     addPhotos, deletePhoto, filterPhotos, updatePhoto,
@@ -35,7 +36,7 @@ const Index = () => {
     createShareLink, getSharedContent, addComment
   } = usePhotos();
   
-  const { isAuthenticated, isLoading, currentUser, login, logout, changePassword, hasUserRegistered } = useAuth();
+  const { isAuthenticated, isLoading, currentUser, logout, changePassword } = useAuth();
   const { updatePhotoCount } = usePhotoNotifications();
   
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -188,9 +189,16 @@ const Index = () => {
     );
   }
 
-  // Show login if not authenticated
-  if (!isAuthenticated) {
-    return <LoginScreen onLogin={login} hasUserRegistered={hasUserRegistered} />;
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && !isSharedView) {
+      navigate('/auth');
+    }
+  }, [isLoading, isAuthenticated, isSharedView, navigate]);
+
+  // Don't render if not authenticated (will redirect)
+  if (!isAuthenticated && !isSharedView) {
+    return null;
   }
 
   return (
