@@ -1,1 +1,4 @@
 project_id = "nrwpasgwvpnszojytshu"
+
+[functions.check-email-allowed]
+verify_jwt = false
