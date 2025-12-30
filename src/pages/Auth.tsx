@@ -76,13 +76,16 @@ const Auth = () => {
   };
 
   const checkEmailAllowed = async (emailToCheck: string): Promise<boolean> => {
-    const { data, error } = await supabase
-      .from('allowed_emails')
-      .select('email')
-      .eq('email', emailToCheck.toLowerCase().trim())
-      .maybeSingle();
-    
-    return !!data && !error;
+    try {
+      const response = await supabase.functions.invoke('check-email-allowed', {
+        body: { email: emailToCheck }
+      });
+      
+      return response.data?.allowed === true;
+    } catch (error) {
+      console.error('Error checking email:', error);
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
