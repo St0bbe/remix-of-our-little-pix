@@ -10,7 +10,7 @@ interface PasswordSettingsProps {
   isOpen: boolean;
   onClose: () => void;
   currentEmail: string;
-  onChangePassword: (currentPassword: string, newPassword: string) => { success: boolean; error?: string };
+  onChangePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const PasswordSettings = ({
@@ -24,7 +24,7 @@ export const PasswordSettings = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentPassword) {
       toast.error('Digite sua senha atual');
       return;
@@ -45,7 +45,7 @@ export const PasswordSettings = ({
       return;
     }
 
-    const result = onChangePassword(currentPassword, newPassword);
+    const result = await onChangePassword(currentPassword, newPassword);
     if (result.success) {
       toast.success('Senha alterada com sucesso!');
       setCurrentPassword('');

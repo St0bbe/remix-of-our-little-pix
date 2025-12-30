@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { PasswordReset } from './PasswordReset';
 
 interface LoginScreenProps {
-  onLogin: (email: string, password: string) => { success: boolean; error?: string };
+  onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   hasUserRegistered: (email: string) => boolean;
 }
 
@@ -22,7 +22,7 @@ export const LoginScreen = ({ onLogin, hasUserRegistered }: LoginScreenProps) =>
 
   const isNewUser = email && !hasUserRegistered(email);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -41,7 +41,7 @@ export const LoginScreen = ({ onLogin, hasUserRegistered }: LoginScreenProps) =>
       return;
     }
 
-    const result = onLogin(email, password);
+    const result = await onLogin(email, password);
     if (!result.success) {
       setError(result.error || 'Erro ao fazer login');
       setIsShaking(true);
