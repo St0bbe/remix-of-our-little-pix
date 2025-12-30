@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Photo, PhotoCategory, Album, defaultAlbums } from '@/types/photo';
+import { Photo, PhotoCategory, Album, SharedLink, defaultAlbums } from '@/types/photo';
 
 const PHOTOS_KEY = 'family-photos';
 const ALBUMS_KEY = 'family-albums';
+const SHARED_LINKS_KEY = 'family-shared-links';
 
 export const usePhotos = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
+  const [sharedLinks, setSharedLinks] = useState<SharedLink[]>([]);
   const [children, setChildren] = useState<string[]>([]);
 
   useEffect(() => {
@@ -33,6 +35,12 @@ export const usePhotos = () => {
       setAlbums(initialAlbums);
       localStorage.setItem(ALBUMS_KEY, JSON.stringify(initialAlbums));
     }
+
+    // Load shared links
+    const storedLinks = localStorage.getItem(SHARED_LINKS_KEY);
+    if (storedLinks) {
+      setSharedLinks(JSON.parse(storedLinks));
+    }
   }, []);
 
   const addPhotos = (newPhotos: Omit<Photo, 'id' | 'createdAt'>[]) => {
@@ -58,6 +66,13 @@ export const usePhotos = () => {
     localStorage.setItem(PHOTOS_KEY, JSON.stringify(updatedPhotos));
   };
 
+  const toggleFavorite = (id: string) => {
+    const photo = photos.find(p => p.id === id);
+    if (photo) {
+      updatePhoto(id, { isFavorite: !photo.isFavorite });
+    }
+  };
+
   const deletePhoto = (id: string) => {
     const updatedPhotos = photos.filter(p => p.id !== id);
     setPhotos(updatedPhotos);
@@ -76,6 +91,8 @@ export const usePhotos = () => {
       return matchCategory && matchChild && matchAlbum;
     });
   };
+
+  const getFavorites = () => photos.filter(p => p.isFavorite);
 
   const getPhotosByMonth = () => {
     const grouped: Record<string, Photo[]> = {};
@@ -106,14 +123,12 @@ export const usePhotos = () => {
   };
 
   const deleteAlbum = (id: string) => {
-    // Remove album from photos
     const updatedPhotos = photos.map(p => 
       p.albumId === id ? { ...p, albumId: undefined } : p
     );
     setPhotos(updatedPhotos);
     localStorage.setItem(PHOTOS_KEY, JSON.stringify(updatedPhotos));
 
-    // Remove album
     const updatedAlbums = albums.filter(a => a.id !== id);
     setAlbums(updatedAlbums);
     localStorage.setItem(ALBUMS_KEY, JSON.stringify(updatedAlbums));
@@ -123,17 +138,56 @@ export const usePhotos = () => {
     return photos.filter(p => p.albumId === albumId);
   };
 
+  // Shared links
+  const createShareLink = (type: 'photo' | 'album', targetId: string): string => {
+    const existingLink = sharedLinks.find(l => l.type === type && l.targetId === targetId);
+    if (existingLink) {
+      return existingLink.id;
+    }
+
+    const newLink: SharedLink = {
+      id: crypto.randomUUID().slice(0, 8),
+      type,
+      targetId,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedLinks = [...sharedLinks, newLink];
+    setSharedLinks(updatedLinks);
+    localStorage.setItem(SHARED_LINKS_KEY, JSON.stringify(updatedLinks));
+    return newLink.id;
+  };
+
+  const getSharedContent = (linkId: string) => {
+    const link = sharedLinks.find(l => l.id === linkId);
+    if (!link) return null;
+
+    if (link.type === 'photo') {
+      const photo = photos.find(p => p.id === link.targetId);
+      return photo ? { type: 'photo' as const, data: photo } : null;
+    } else {
+      const album = albums.find(a => a.id === link.targetId);
+      const albumPhotos = photos.filter(p => p.albumId === link.targetId);
+      return album ? { type: 'album' as const, data: album, photos: albumPhotos } : null;
+    }
+  };
+
   return {
     photos,
     albums,
     children,
+    sharedLinks,
     addPhotos,
     updatePhoto,
+    toggleFavorite,
     deletePhoto,
     filterPhotos,
+    getFavorites,
     getPhotosByMonth,
     addAlbum,
     deleteAlbum,
     getAlbumPhotos,
+    createShareLink,
+    getSharedContent,
   };
 };

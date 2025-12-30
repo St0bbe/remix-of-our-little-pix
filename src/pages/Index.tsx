@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { PhotoFilters } from '@/components/PhotoFilters';
 import { PhotoGrid } from '@/components/PhotoGrid';
@@ -7,28 +7,63 @@ import { PhotoViewer } from '@/components/PhotoViewer';
 import { AlbumGrid } from '@/components/AlbumGrid';
 import { CreateAlbumModal } from '@/components/CreateAlbumModal';
 import { TimelineView } from '@/components/TimelineView';
+import { LoginScreen } from '@/components/LoginScreen';
+import { PasswordSettings } from '@/components/PasswordSettings';
+import { SharedView } from '@/components/SharedView';
 import { usePhotos } from '@/hooks/usePhotos';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Photo, PhotoCategory } from '@/types/photo';
-import { Plus, Camera, Heart, Grid, Clock, FolderHeart, Download } from 'lucide-react';
+import { Plus, Camera, Heart, Grid, Clock, FolderHeart, Download, Settings, LogOut, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
 
 const Index = () => {
-  const { photos, albums, children, addPhotos, deletePhoto, filterPhotos, addAlbum } = usePhotos();
+  const { 
+    photos, albums, children, 
+    addPhotos, deletePhoto, filterPhotos, 
+    addAlbum, toggleFavorite, getFavorites,
+    createShareLink, getSharedContent 
+  } = usePhotos();
+  
+  const { isAuthenticated, isLoading, hasPassword, login, logout, setPassword, removePassword } = useAuth();
+  
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCreateAlbumOpen, setIsCreateAlbumOpen] = useState(false);
+  const [isPasswordSettingsOpen, setIsPasswordSettingsOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<PhotoCategory | 'all'>('all');
   const [childFilter, setChildFilter] = useState<string | 'all'>('all');
   const [albumFilter, setAlbumFilter] = useState<string | 'all'>('all');
   const [viewingPhoto, setViewingPhoto] = useState<Photo | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('gallery');
+
+  // Check for shared link
+  const [sharedContent, setSharedContent] = useState<ReturnType<typeof getSharedContent>>(null);
+  const [isSharedView, setIsSharedView] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shareId = params.get('share');
+    if (shareId) {
+      // Give time for photos to load
+      setTimeout(() => {
+        const content = getSharedContent(shareId);
+        if (content) {
+          setSharedContent(content);
+          setIsSharedView(true);
+        }
+      }, 500);
+    }
+  }, [photos, albums]);
 
   const filteredPhotos = useMemo(() => {
     return filterPhotos(categoryFilter, childFilter, albumFilter);
   }, [photos, categoryFilter, childFilter, albumFilter, filterPhotos]);
+
+  const favoritePhotos = useMemo(() => getFavorites(), [photos, getFavorites]);
 
   const photoCountByAlbum = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -89,6 +124,56 @@ const Index = () => {
     setSelectionMode(false);
   };
 
+  const handleSharePhoto = (photoId: string) => {
+    return createShareLink('photo', photoId);
+  };
+
+  const handleShareAlbum = (albumId: string) => {
+    return createShareLink('album', albumId);
+  };
+
+  const exitSharedView = () => {
+    setIsSharedView(false);
+    setSharedContent(null);
+    window.history.pushState({}, '', window.location.pathname);
+  };
+
+  // Show loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse">
+          <Heart className="w-12 h-12 text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show shared view (public, no auth required)
+  if (isSharedView && sharedContent) {
+    return (
+      <>
+        <SharedView
+          type={sharedContent.type}
+          photo={sharedContent.type === 'photo' ? sharedContent.data as Photo : undefined}
+          album={sharedContent.type === 'album' ? sharedContent.data : undefined}
+          photos={sharedContent.type === 'album' ? sharedContent.photos : undefined}
+          onViewPhoto={setViewingPhoto}
+        />
+        <PhotoViewer
+          photo={viewingPhoto}
+          isOpen={!!viewingPhoto}
+          onClose={() => setViewingPhoto(null)}
+        />
+      </>
+    );
+  }
+
+  // Show login if not authenticated
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={login} />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -137,22 +222,44 @@ const Index = () => {
               )}
             </>
           )}
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={() => setIsPasswordSettingsOpen(true)}
+          >
+            <Settings className="w-5 h-5 mr-2" />
+            Senha
+          </Button>
+          {hasPassword && (
+            <Button
+              size="lg"
+              variant="ghost"
+              onClick={logout}
+            >
+              <LogOut className="w-5 h-5 mr-2" />
+              Sair
+            </Button>
+          )}
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="gallery" className="space-y-6">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-lg mx-auto grid-cols-4">
             <TabsTrigger value="gallery" className="gap-2">
               <Grid className="w-4 h-4" />
-              Galeria
+              <span className="hidden sm:inline">Galeria</span>
+            </TabsTrigger>
+            <TabsTrigger value="favorites" className="gap-2">
+              <Star className="w-4 h-4" />
+              <span className="hidden sm:inline">Favoritas</span>
             </TabsTrigger>
             <TabsTrigger value="timeline" className="gap-2">
               <Clock className="w-4 h-4" />
-              Timeline
+              <span className="hidden sm:inline">Timeline</span>
             </TabsTrigger>
             <TabsTrigger value="albums" className="gap-2">
               <FolderHeart className="w-4 h-4" />
-              Álbuns
+              <span className="hidden sm:inline">Álbuns</span>
             </TabsTrigger>
           </TabsList>
 
@@ -170,9 +277,23 @@ const Index = () => {
               photos={filteredPhotos}
               onDelete={deletePhoto}
               onView={setViewingPhoto}
+              onToggleFavorite={toggleFavorite}
               selectionMode={selectionMode}
               selectedPhotos={selectedPhotos}
               onToggleSelect={togglePhotoSelection}
+            />
+          </TabsContent>
+
+          <TabsContent value="favorites" className="space-y-6">
+            <PhotoGrid
+              photos={favoritePhotos}
+              onDelete={deletePhoto}
+              onView={setViewingPhoto}
+              onToggleFavorite={toggleFavorite}
+              selectionMode={selectionMode}
+              selectedPhotos={selectedPhotos}
+              onToggleSelect={togglePhotoSelection}
+              emptyMessage="Clique no coração das fotos para adicioná-las aos favoritos!"
             />
           </TabsContent>
 
@@ -185,10 +306,10 @@ const Index = () => {
               albums={albums}
               onSelectAlbum={(id) => {
                 setAlbumFilter(id);
-                const tabGallery = document.querySelector('[data-state="inactive"][value="gallery"]') as HTMLButtonElement;
-                tabGallery?.click();
+                setActiveTab('gallery');
               }}
               onCreateAlbum={() => setIsCreateAlbumOpen(true)}
+              onShareAlbum={handleShareAlbum}
               photoCountByAlbum={photoCountByAlbum}
             />
           </TabsContent>
@@ -219,10 +340,20 @@ const Index = () => {
         onCreateAlbum={addAlbum}
       />
 
+      <PasswordSettings
+        isOpen={isPasswordSettingsOpen}
+        onClose={() => setIsPasswordSettingsOpen(false)}
+        hasPassword={hasPassword}
+        onSetPassword={setPassword}
+        onRemovePassword={removePassword}
+      />
+
       <PhotoViewer
         photo={viewingPhoto}
         isOpen={!!viewingPhoto}
         onClose={() => setViewingPhoto(null)}
+        onToggleFavorite={toggleFavorite}
+        onShare={handleSharePhoto}
       />
     </div>
   );

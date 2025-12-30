@@ -3,7 +3,7 @@ import { Photo, categoryLabels } from '@/types/photo';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Calendar, ZoomIn } from 'lucide-react';
+import { Trash2, Calendar, ZoomIn, Heart } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -11,12 +11,21 @@ interface PhotoCardProps {
   photo: Photo;
   onDelete: (id: string) => void;
   onView: (photo: Photo) => void;
+  onToggleFavorite?: (id: string) => void;
   selectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (id: string) => void;
 }
 
-export const PhotoCard = ({ photo, onDelete, onView, selectionMode, isSelected, onToggleSelect }: PhotoCardProps) => {
+export const PhotoCard = ({ 
+  photo, 
+  onDelete, 
+  onView, 
+  onToggleFavorite,
+  selectionMode, 
+  isSelected, 
+  onToggleSelect 
+}: PhotoCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const formattedDate = format(new Date(photo.date), "d 'de' MMMM, yyyy", {
@@ -48,6 +57,13 @@ export const PhotoCard = ({ photo, onDelete, onView, selectionMode, isSelected, 
         />
       </div>
 
+      {/* Favorite indicator */}
+      {photo.isFavorite && !selectionMode && (
+        <div className="absolute top-3 left-3">
+          <Heart className="w-6 h-6 text-primary fill-primary drop-shadow-md" />
+        </div>
+      )}
+
       {selectionMode && (
         <div className="absolute top-3 left-3">
           <Checkbox checked={isSelected} className="w-6 h-6 bg-card" />
@@ -72,6 +88,16 @@ export const PhotoCard = ({ photo, onDelete, onView, selectionMode, isSelected, 
                 </div>
               </div>
               <div className="flex gap-2">
+                {onToggleFavorite && (
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="w-8 h-8"
+                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(photo.id); }}
+                  >
+                    <Heart className={`w-4 h-4 ${photo.isFavorite ? 'fill-primary text-primary' : ''}`} />
+                  </Button>
+                )}
                 <Button
                   size="icon"
                   variant="secondary"
