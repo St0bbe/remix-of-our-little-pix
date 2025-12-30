@@ -33,7 +33,7 @@ const Index = () => {
     createShareLink, getSharedContent 
   } = usePhotos();
   
-  const { isAuthenticated, isLoading, hasPassword, login, logout, setPassword, removePassword } = useAuth();
+  const { isAuthenticated, isLoading, currentUser, login, logout, changePassword, hasUserRegistered } = useAuth();
   
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCreateAlbumOpen, setIsCreateAlbumOpen] = useState(false);
@@ -187,7 +187,7 @@ const Index = () => {
 
   // Show login if not authenticated
   if (!isAuthenticated) {
-    return <LoginScreen onLogin={login} />;
+    return <LoginScreen onLogin={login} hasUserRegistered={hasUserRegistered} />;
   }
 
   return (
@@ -274,14 +274,12 @@ const Index = () => {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setIsPasswordSettingsOpen(true)}>
                 <Settings className="w-4 h-4 mr-2" />
-                Configurar Senha
+                Alterar Senha
               </DropdownMenuItem>
-              {hasPassword && (
-                <DropdownMenuItem onClick={logout}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sair
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem onClick={logout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -395,9 +393,8 @@ const Index = () => {
       <PasswordSettings
         isOpen={isPasswordSettingsOpen}
         onClose={() => setIsPasswordSettingsOpen(false)}
-        hasPassword={hasPassword}
-        onSetPassword={setPassword}
-        onRemovePassword={removePassword}
+        currentEmail={currentUser?.email || ''}
+        onChangePassword={changePassword}
       />
 
       <PhotoViewer

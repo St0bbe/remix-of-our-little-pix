@@ -1,35 +1,56 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { Heart, Lock, Eye, EyeOff, Camera, Baby } from 'lucide-react';
+import { Heart, Lock, Eye, EyeOff, Camera, Baby, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LoginScreenProps {
-  onLogin: (password: string) => boolean;
+  onLogin: (email: string, password: string) => { success: boolean; error?: string };
+  hasUserRegistered: (email: string) => boolean;
 }
 
-export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
+export const LoginScreen = ({ onLogin, hasUserRegistered }: LoginScreenProps) => {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
 
+  const isNewUser = email && !hasUserRegistered(email);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    if (!password) {
-      setError('Digite a senha');
+    if (!email) {
+      setError('Digite seu email');
       return;
     }
 
-    const success = onLogin(password);
-    if (!success) {
-      setError('Senha incorreta');
+    if (!password) {
+      setError('Digite sua senha');
+      return;
+    }
+
+    if (password.length < 4) {
+      setError('A senha deve ter pelo menos 4 caracteres');
+      return;
+    }
+
+    const result = onLogin(email, password);
+    if (!result.success) {
+      setError(result.error || 'Erro ao fazer login');
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
-      toast.error('Senha incorreta');
+      toast.error(result.error || 'Erro ao fazer login');
+    } else {
+      if (isNewUser) {
+        toast.success('Conta criada! Sua senha foi salva.');
+      } else {
+        toast.success('Bem-vindo(a) de volta!');
+      }
     }
   };
 
@@ -75,27 +96,57 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
             Álbum da Família
           </h1>
           <p className="text-muted-foreground mb-8">
-            Área restrita • Digite a senha para acessar
+            {isNewUser 
+              ? 'Primeiro acesso? Crie sua senha!' 
+              : 'Entre com seu email e senha'}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Senha de acesso"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-10 h-12 text-lg"
-                autoFocus
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-left block">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 h-12"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-left block">
+                {isNewUser ? 'Criar Senha' : 'Senha'}
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder={isNewUser ? 'Crie uma senha' : 'Sua senha'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10 h-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {isNewUser && (
+                <p className="text-xs text-muted-foreground text-left">
+                  Mínimo de 4 caracteres
+                </p>
+              )}
             </div>
             
             {error && (
@@ -103,13 +154,13 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
             )}
 
             <Button type="submit" className="w-full gradient-primary h-12 text-lg" size="lg">
-              Entrar no Álbum
+              {isNewUser ? 'Criar Conta e Entrar' : 'Entrar'}
             </Button>
           </form>
 
           <div className="mt-8 pt-6 border-t border-border">
             <p className="text-xs text-muted-foreground">
-              Apenas membros da família podem acessar
+              Acesso exclusivo para membros da família
             </p>
           </div>
         </Card>

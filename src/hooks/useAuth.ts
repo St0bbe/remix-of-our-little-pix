@@ -1,66 +1,110 @@
 import { useState, useEffect } from 'react';
 
 const AUTH_KEY = 'family-album-auth';
-const PASSWORD_KEY = 'family-album-password';
+const USERS_KEY = 'family-album-users';
+
+// Usuários autorizados
+const AUTHORIZED_USERS = [
+  { email: 'thaisapgalk@gmail.com' },
+  { email: 'emersonstobbe02@gmail.com' }
+];
+
+interface User {
+  email: string;
+}
 
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasPassword, setHasPassword] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
 
   useEffect(() => {
     const storedAuth = sessionStorage.getItem(AUTH_KEY);
-    const storedPassword = localStorage.getItem(PASSWORD_KEY);
     
-    setHasPassword(!!storedPassword);
-    
-    if (!storedPassword) {
-      // No password set, allow access
+    if (storedAuth) {
+      const user = JSON.parse(storedAuth);
+      setCurrentUser(user);
       setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(storedAuth === 'true');
     }
     
     setIsLoading(false);
   }, []);
 
-  const login = (password: string): boolean => {
-    const storedPassword = localStorage.getItem(PASSWORD_KEY);
+  const login = (email: string, password: string): { success: boolean; error?: string } => {
+    const normalizedEmail = email.toLowerCase().trim();
     
-    if (password === storedPassword) {
-      sessionStorage.setItem(AUTH_KEY, 'true');
-      setIsAuthenticated(true);
-      return true;
+    // Verificar se é um usuário autorizado
+    const authorizedUser = AUTHORIZED_USERS.find(u => u.email === normalizedEmail);
+    if (!authorizedUser) {
+      return { success: false, error: 'Este email não tem permissão para acessar' };
     }
-    return false;
+
+    // Buscar usuários cadastrados
+    const storedUsers = localStorage.getItem(USERS_KEY);
+    const users: Record<string, string> = storedUsers ? JSON.parse(storedUsers) : {};
+
+    // Se o usuário ainda não definiu senha, é primeiro login
+    if (!users[normalizedEmail]) {
+      // Primeiro login - salvar senha
+      users[normalizedEmail] = password;
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      
+      const user = { email: normalizedEmail };
+      sessionStorage.setItem(AUTH_KEY, JSON.stringify(user));
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+      setIsFirstLogin(true);
+      return { success: true };
+    }
+
+    // Verificar senha
+    if (users[normalizedEmail] !== password) {
+      return { success: false, error: 'Senha incorreta' };
+    }
+
+    const user = { email: normalizedEmail };
+    sessionStorage.setItem(AUTH_KEY, JSON.stringify(user));
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    return { success: true };
   };
 
   const logout = () => {
     sessionStorage.removeItem(AUTH_KEY);
+    setCurrentUser(null);
     setIsAuthenticated(false);
   };
 
-  const setPassword = (newPassword: string) => {
-    localStorage.setItem(PASSWORD_KEY, newPassword);
-    sessionStorage.setItem(AUTH_KEY, 'true');
-    setHasPassword(true);
-    setIsAuthenticated(true);
+  const changePassword = (currentPassword: string, newPassword: string): { success: boolean; error?: string } => {
+    if (!currentUser) return { success: false, error: 'Usuário não autenticado' };
+
+    const storedUsers = localStorage.getItem(USERS_KEY);
+    const users: Record<string, string> = storedUsers ? JSON.parse(storedUsers) : {};
+
+    if (users[currentUser.email] !== currentPassword) {
+      return { success: false, error: 'Senha atual incorreta' };
+    }
+
+    users[currentUser.email] = newPassword;
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    return { success: true };
   };
 
-  const removePassword = () => {
-    localStorage.removeItem(PASSWORD_KEY);
-    sessionStorage.removeItem(AUTH_KEY);
-    setHasPassword(false);
-    setIsAuthenticated(true);
+  const hasUserRegistered = (email: string): boolean => {
+    const storedUsers = localStorage.getItem(USERS_KEY);
+    const users: Record<string, string> = storedUsers ? JSON.parse(storedUsers) : {};
+    return !!users[email.toLowerCase().trim()];
   };
 
   return {
     isAuthenticated,
     isLoading,
-    hasPassword,
+    currentUser,
+    isFirstLogin,
     login,
     logout,
-    setPassword,
-    removePassword,
+    changePassword,
+    hasUserRegistered,
   };
 };
