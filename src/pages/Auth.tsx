@@ -33,13 +33,23 @@ const Auth = () => {
     }
   }, [searchParams]);
 
-  // Check if already authenticated
+  // Check if already authenticated and listen for auth changes
   useEffect(() => {
+    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && mode !== 'reset') {
         navigate('/');
       }
     });
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session && mode !== 'reset') {
+        navigate('/');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate, mode]);
 
   const validateInputs = () => {
