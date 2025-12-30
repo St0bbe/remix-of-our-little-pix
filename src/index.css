@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -37,8 +37,16 @@
     --radius: 1rem;
 
     /* Custom tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(350 60% 65%), hsl(25 80% 70%));
-    --gradient-soft: linear-gradient(180deg, hsl(30 30% 98%), hsl(30 40% 95%));
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(350 60% 65%),
+      hsl(25 80% 70%)
+    );
+    --gradient-soft: linear-gradient(
+      180deg,
+      hsl(30 30% 98%),
+      hsl(30 40% 95%)
+    );
     --shadow-soft: 0 4px 20px -4px hsl(350 60% 65% / 0.15);
     --shadow-card: 0 2px 12px -2px hsl(20 20% 20% / 0.08);
     --shadow-hover: 0 8px 30px -8px hsl(350 60% 65% / 0.25);
@@ -76,9 +84,7 @@
     --input: 20 15% 25%;
     --ring: 350 55% 60%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -88,7 +94,12 @@
     font-family: var(--font-body);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
   }
 }
@@ -133,17 +144,33 @@
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
