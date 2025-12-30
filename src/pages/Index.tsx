@@ -10,19 +10,22 @@ import { TimelineView } from '@/components/TimelineView';
 import { LoginScreen } from '@/components/LoginScreen';
 import { PasswordSettings } from '@/components/PasswordSettings';
 import { SharedView } from '@/components/SharedView';
+import { StatsView } from '@/components/StatsView';
+import { Slideshow } from '@/components/Slideshow';
+import { EditPhotoModal } from '@/components/EditPhotoModal';
 import { usePhotos } from '@/hooks/usePhotos';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Photo, PhotoCategory } from '@/types/photo';
-import { Plus, Camera, Heart, Grid, Clock, FolderHeart, Download, Settings, LogOut, Star } from 'lucide-react';
+import { Plus, Camera, Heart, Grid, Clock, FolderHeart, Download, Settings, LogOut, Star, BarChart3, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
 
 const Index = () => {
   const { 
     photos, albums, children, 
-    addPhotos, deletePhoto, filterPhotos, 
+    addPhotos, deletePhoto, filterPhotos, updatePhoto,
     addAlbum, toggleFavorite, getFavorites,
     createShareLink, getSharedContent 
   } = usePhotos();
@@ -36,9 +39,12 @@ const Index = () => {
   const [childFilter, setChildFilter] = useState<string | 'all'>('all');
   const [albumFilter, setAlbumFilter] = useState<string | 'all'>('all');
   const [viewingPhoto, setViewingPhoto] = useState<Photo | null>(null);
+  const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [activeTab, setActiveTab] = useState('gallery');
+  const [isSlideshowOpen, setIsSlideshowOpen] = useState(false);
+  const [slideshowStartIndex, setSlideshowStartIndex] = useState(0);
 
   // Check for shared link
   const [sharedContent, setSharedContent] = useState<ReturnType<typeof getSharedContent>>(null);
@@ -48,7 +54,6 @@ const Index = () => {
     const params = new URLSearchParams(window.location.search);
     const shareId = params.get('share');
     if (shareId) {
-      // Give time for photos to load
       setTimeout(() => {
         const content = getSharedContent(shareId);
         if (content) {
@@ -132,10 +137,16 @@ const Index = () => {
     return createShareLink('album', albumId);
   };
 
-  const exitSharedView = () => {
-    setIsSharedView(false);
-    setSharedContent(null);
-    window.history.pushState({}, '', window.location.pathname);
+  const startSlideshow = (startIndex = 0) => {
+    setSlideshowStartIndex(startIndex);
+    setIsSlideshowOpen(true);
+  };
+
+  const startSlideshowFromPhoto = () => {
+    if (viewingPhoto) {
+      const index = filteredPhotos.findIndex(p => p.id === viewingPhoto.id);
+      startSlideshow(index >= 0 ? index : 0);
+    }
   };
 
   // Show loading
@@ -206,6 +217,14 @@ const Index = () => {
             <>
               <Button
                 size="lg"
+                variant="outline"
+                onClick={() => startSlideshow()}
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Slideshow
+              </Button>
+              <Button
+                size="lg"
                 variant={selectionMode ? 'default' : 'outline'}
                 onClick={() => {
                   setSelectionMode(!selectionMode);
@@ -213,7 +232,7 @@ const Index = () => {
                 }}
               >
                 <Download className="w-5 h-5 mr-2" />
-                {selectionMode ? 'Cancelar' : 'Baixar Fotos'}
+                {selectionMode ? 'Cancelar' : 'Baixar'}
               </Button>
               {selectionMode && selectedPhotos.size > 0 && (
                 <Button size="lg" onClick={downloadSelectedPhotos}>
@@ -244,22 +263,26 @@ const Index = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-lg mx-auto grid-cols-4">
-            <TabsTrigger value="gallery" className="gap-2">
+          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-5">
+            <TabsTrigger value="gallery" className="gap-1 text-xs sm:text-sm">
               <Grid className="w-4 h-4" />
               <span className="hidden sm:inline">Galeria</span>
             </TabsTrigger>
-            <TabsTrigger value="favorites" className="gap-2">
+            <TabsTrigger value="favorites" className="gap-1 text-xs sm:text-sm">
               <Star className="w-4 h-4" />
               <span className="hidden sm:inline">Favoritas</span>
             </TabsTrigger>
-            <TabsTrigger value="timeline" className="gap-2">
+            <TabsTrigger value="timeline" className="gap-1 text-xs sm:text-sm">
               <Clock className="w-4 h-4" />
               <span className="hidden sm:inline">Timeline</span>
             </TabsTrigger>
-            <TabsTrigger value="albums" className="gap-2">
+            <TabsTrigger value="albums" className="gap-1 text-xs sm:text-sm">
               <FolderHeart className="w-4 h-4" />
               <span className="hidden sm:inline">Álbuns</span>
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="gap-1 text-xs sm:text-sm">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Stats</span>
             </TabsTrigger>
           </TabsList>
 
@@ -313,6 +336,10 @@ const Index = () => {
               photoCountByAlbum={photoCountByAlbum}
             />
           </TabsContent>
+
+          <TabsContent value="stats">
+            <StatsView photos={photos} children={children} />
+          </TabsContent>
         </Tabs>
 
         {/* Footer */}
@@ -354,6 +381,23 @@ const Index = () => {
         onClose={() => setViewingPhoto(null)}
         onToggleFavorite={toggleFavorite}
         onShare={handleSharePhoto}
+        onEdit={setEditingPhoto}
+        onSlideshow={startSlideshowFromPhoto}
+      />
+
+      <EditPhotoModal
+        photo={editingPhoto}
+        isOpen={!!editingPhoto}
+        onClose={() => setEditingPhoto(null)}
+        onSave={updatePhoto}
+        albums={albums}
+      />
+
+      <Slideshow
+        photos={filteredPhotos.length > 0 ? filteredPhotos : photos}
+        isOpen={isSlideshowOpen}
+        onClose={() => setIsSlideshowOpen(false)}
+        startIndex={slideshowStartIndex}
       />
     </div>
   );
