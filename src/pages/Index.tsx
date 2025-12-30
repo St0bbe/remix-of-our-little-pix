@@ -59,6 +59,14 @@ const Index = () => {
   const [sharedContent, setSharedContent] = useState<ReturnType<typeof getSharedContent>>(null);
   const [isSharedView, setIsSharedView] = useState(false);
 
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && !isSharedView) {
+      navigate('/auth');
+    }
+  }, [isLoading, isAuthenticated, isSharedView, navigate]);
+
+  // Check for shared link
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const shareId = params.get('share');
@@ -71,7 +79,7 @@ const Index = () => {
         }
       }, 500);
     }
-  }, [photos, albums]);
+  }, [photos, albums, getSharedContent]);
 
   const filteredPhotos = useMemo(() => {
     return filterPhotos(categoryFilter, childFilter, albumFilter);
@@ -189,14 +197,7 @@ const Index = () => {
     );
   }
 
-  // Redirect to auth if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated && !isSharedView) {
-      navigate('/auth');
-    }
-  }, [isLoading, isAuthenticated, isSharedView, navigate]);
-
-  // Don't render if not authenticated (will redirect)
+  // Don't render if not authenticated (will redirect via useEffect above)
   if (!isAuthenticated && !isSharedView) {
     return null;
   }
