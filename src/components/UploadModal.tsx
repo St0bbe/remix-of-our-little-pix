@@ -13,7 +13,8 @@ interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpload: (photos: Array<{
-    url: string;
+    file?: File;
+    url?: string;
     date: string;
     category: PhotoCategory;
     childName: string;
@@ -42,6 +43,7 @@ export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren, album
   const [albumId, setAlbumId] = useState<string>('none');
   const [isNewChild, setIsNewChild] = useState(existingChildren.length === 0);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,7 +74,7 @@ export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren, album
     ));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (pendingPhotos.length === 0) {
       toast.error('Adicione pelo menos uma foto');
       return;
@@ -83,27 +85,36 @@ export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren, album
       return;
     }
 
-    const photos = pendingPhotos.map(p => ({
-      url: p.preview,
-      date,
-      category,
-      childName: childName.trim(),
-      title: p.title || undefined,
-      description: p.description || undefined,
-      albumId: albumId !== 'none' ? albumId : undefined,
-    }));
+    setIsUploading(true);
 
-    onUpload(photos, onPhotosAdded, currentUserEmail);
-    toast.success(`${photos.length} foto(s) adicionada(s) com sucesso!`);
-    
-    // Reset form
-    setPendingPhotos([]);
-    setDate(new Date().toISOString().split('T')[0]);
-    setCategory('sozinha');
-    setChildName('');
-    setAlbumId('none');
-    setEditingIndex(null);
-    onClose();
+    try {
+      const photos = pendingPhotos.map(p => ({
+        file: p.file,
+        date,
+        category,
+        childName: childName.trim(),
+        title: p.title || undefined,
+        description: p.description || undefined,
+        albumId: albumId !== 'none' ? albumId : undefined,
+      }));
+
+      await onUpload(photos, onPhotosAdded, currentUserEmail);
+      toast.success(`${photos.length} foto(s) adicionada(s) com sucesso!`);
+      
+      // Reset form
+      setPendingPhotos([]);
+      setDate(new Date().toISOString().split('T')[0]);
+      setCategory('sozinha');
+      setChildName('');
+      setAlbumId('none');
+      setEditingIndex(null);
+      onClose();
+    } catch (error) {
+      toast.error('Erro ao fazer upload das fotos');
+      console.error(error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleClose = () => {
@@ -307,9 +318,9 @@ export const UploadModal = ({ isOpen, onClose, onUpload, existingChildren, album
             <Button variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} className="gradient-primary">
+            <Button onClick={handleSubmit} className="gradient-primary" disabled={isUploading}>
               <Image className="w-4 h-4 mr-2" />
-              Salvar {pendingPhotos.length > 0 && `(${pendingPhotos.length})`}
+              {isUploading ? 'Enviando...' : `Salvar ${pendingPhotos.length > 0 ? `(${pendingPhotos.length})` : ''}`}
             </Button>
           </div>
         </div>
