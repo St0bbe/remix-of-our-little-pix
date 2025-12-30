@@ -6,6 +6,7 @@ export interface Comment {
   id: string;
   userEmail: string;
   text: string;
+  parentId?: string; // For thread replies
   createdAt: string;
 }
 

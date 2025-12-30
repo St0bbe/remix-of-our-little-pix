@@ -121,7 +121,7 @@ export const usePhotos = () => {
     }
   };
 
-  const addComment = (photoId: string, text: string, userEmail: string) => {
+  const addComment = (photoId: string, text: string, userEmail: string, parentId?: string) => {
     const photo = photos.find(p => p.id === photoId);
     if (!photo) return;
 
@@ -129,6 +129,7 @@ export const usePhotos = () => {
       id: crypto.randomUUID(),
       userEmail,
       text,
+      parentId,
       createdAt: new Date().toISOString(),
     };
 
@@ -140,7 +141,7 @@ export const usePhotos = () => {
       userEmail,
       photoId,
       photoTitle: photo.title || photo.childName,
-      commentText: text,
+      commentText: parentId ? `(resposta) ${text}` : text,
     });
   };
 

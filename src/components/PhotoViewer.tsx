@@ -17,7 +17,7 @@ interface PhotoViewerProps {
   onShare?: (photoId: string) => string;
   onEdit?: (photo: Photo) => void;
   onSlideshow?: () => void;
-  onAddComment?: (photoId: string, text: string) => void;
+  onAddComment?: (photoId: string, text: string, parentId?: string) => void;
   currentUserEmail?: string;
 }
 
@@ -119,7 +119,7 @@ export const PhotoViewer = ({
             <CommentsSection
               comments={photo.comments || []}
               currentUserEmail={currentUserEmail}
-              onAddComment={(text) => onAddComment(photo.id, text)}
+              onAddComment={(text, parentId) => onAddComment(photo.id, text, parentId)}
             />
           )}
 

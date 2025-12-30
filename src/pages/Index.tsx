@@ -424,7 +424,7 @@ const Index = () => {
         onShare={handleSharePhoto}
         onEdit={setEditingPhoto}
         onSlideshow={startSlideshowFromPhoto}
-        onAddComment={(photoId, text) => addComment(photoId, text, currentUser?.email || '')}
+        onAddComment={(photoId, text, parentId) => addComment(photoId, text, currentUser?.email || '', parentId)}
         currentUserEmail={currentUser?.email}
       />
 

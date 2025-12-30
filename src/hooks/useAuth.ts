@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
+import { emailSchema, passwordSchema, simpleHash } from '@/lib/validation';
 
 const AUTH_KEY = 'family-album-auth';
 const USERS_KEY = 'family-album-users';
 
-// Usuários autorizados
+// Usuários autorizados (emails em lowercase)
 const AUTHORIZED_USERS = [
-  { email: 'thaisapgalk@gmail.com' },
-  { email: 'emersonstobbe02@gmail.com' }
+  'thaisapgalk@gmail.com',
+  'emersonstobbe02@gmail.com'
 ];
 
 interface User {
@@ -23,31 +24,59 @@ export const useAuth = () => {
     const storedAuth = sessionStorage.getItem(AUTH_KEY);
     
     if (storedAuth) {
-      const user = JSON.parse(storedAuth);
-      setCurrentUser(user);
-      setIsAuthenticated(true);
+      try {
+        const user = JSON.parse(storedAuth);
+        // Validate stored email is still authorized
+        if (AUTHORIZED_USERS.includes(user.email)) {
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        } else {
+          sessionStorage.removeItem(AUTH_KEY);
+        }
+      } catch {
+        sessionStorage.removeItem(AUTH_KEY);
+      }
     }
     
     setIsLoading(false);
   }, []);
 
-  const login = (email: string, password: string): { success: boolean; error?: string } => {
-    const normalizedEmail = email.toLowerCase().trim();
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    // Validate email format
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      return { success: false, error: emailResult.error.errors[0].message };
+    }
+
+    // Validate password format
+    const passwordResult = passwordSchema.safeParse(password);
+    if (!passwordResult.success) {
+      return { success: false, error: passwordResult.error.errors[0].message };
+    }
+
+    const normalizedEmail = emailResult.data.toLowerCase();
     
     // Verificar se é um usuário autorizado
-    const authorizedUser = AUTHORIZED_USERS.find(u => u.email === normalizedEmail);
-    if (!authorizedUser) {
+    if (!AUTHORIZED_USERS.includes(normalizedEmail)) {
       return { success: false, error: 'Este email não tem permissão para acessar' };
     }
 
+    // Hash the password
+    const hashedPassword = await simpleHash(password);
+
     // Buscar usuários cadastrados
     const storedUsers = localStorage.getItem(USERS_KEY);
-    const users: Record<string, string> = storedUsers ? JSON.parse(storedUsers) : {};
+    let users: Record<string, string> = {};
+    
+    try {
+      users = storedUsers ? JSON.parse(storedUsers) : {};
+    } catch {
+      users = {};
+    }
 
     // Se o usuário ainda não definiu senha, é primeiro login
     if (!users[normalizedEmail]) {
-      // Primeiro login - salvar senha
-      users[normalizedEmail] = password;
+      users[normalizedEmail] = hashedPassword;
       localStorage.setItem(USERS_KEY, JSON.stringify(users));
       
       const user = { email: normalizedEmail };
@@ -58,8 +87,8 @@ export const useAuth = () => {
       return { success: true };
     }
 
-    // Verificar senha
-    if (users[normalizedEmail] !== password) {
+    // Verificar senha (compare hashes)
+    if (users[normalizedEmail] !== hashedPassword) {
       return { success: false, error: 'Senha incorreta' };
     }
 
@@ -76,25 +105,65 @@ export const useAuth = () => {
     setIsAuthenticated(false);
   };
 
-  const changePassword = (currentPassword: string, newPassword: string): { success: boolean; error?: string } => {
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'Usuário não autenticado' };
 
-    const storedUsers = localStorage.getItem(USERS_KEY);
-    const users: Record<string, string> = storedUsers ? JSON.parse(storedUsers) : {};
+    // Validate new password
+    const passwordResult = passwordSchema.safeParse(newPassword);
+    if (!passwordResult.success) {
+      return { success: false, error: passwordResult.error.errors[0].message };
+    }
 
-    if (users[currentUser.email] !== currentPassword) {
+    const storedUsers = localStorage.getItem(USERS_KEY);
+    let users: Record<string, string> = {};
+    
+    try {
+      users = storedUsers ? JSON.parse(storedUsers) : {};
+    } catch {
+      return { success: false, error: 'Erro ao processar dados' };
+    }
+
+    const currentHash = await simpleHash(currentPassword);
+    if (users[currentUser.email] !== currentHash) {
       return { success: false, error: 'Senha atual incorreta' };
     }
 
-    users[currentUser.email] = newPassword;
+    const newHash = await simpleHash(newPassword);
+    users[currentUser.email] = newHash;
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
     return { success: true };
   };
 
   const hasUserRegistered = (email: string): boolean => {
     const storedUsers = localStorage.getItem(USERS_KEY);
-    const users: Record<string, string> = storedUsers ? JSON.parse(storedUsers) : {};
-    return !!users[email.toLowerCase().trim()];
+    try {
+      const users: Record<string, string> = storedUsers ? JSON.parse(storedUsers) : {};
+      return !!users[email.toLowerCase().trim()];
+    } catch {
+      return false;
+    }
+  };
+
+  // Reset password (clears the stored hash so user can set a new one)
+  const resetPassword = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    if (!AUTHORIZED_USERS.includes(normalizedEmail)) {
+      return { success: false, error: 'Email não autorizado' };
+    }
+
+    const storedUsers = localStorage.getItem(USERS_KEY);
+    let users: Record<string, string> = {};
+    
+    try {
+      users = storedUsers ? JSON.parse(storedUsers) : {};
+    } catch {
+      users = {};
+    }
+
+    delete users[normalizedEmail];
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    return { success: true };
   };
 
   return {
@@ -106,5 +175,6 @@ export const useAuth = () => {
     logout,
     changePassword,
     hasUserRegistered,
+    resetPassword,
   };
 };
