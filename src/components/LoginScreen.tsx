@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { Heart, Lock, Eye, EyeOff, Camera, Baby, Mail } from 'lucide-react';
+import { Heart, Lock, Eye, EyeOff, Camera, Baby, Mail, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
+import { PasswordReset } from './PasswordReset';
 
 interface LoginScreenProps {
   onLogin: (email: string, password: string) => { success: boolean; error?: string };
@@ -17,6 +18,7 @@ export const LoginScreen = ({ onLogin, hasUserRegistered }: LoginScreenProps) =>
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
+  const [isPasswordResetOpen, setIsPasswordResetOpen] = useState(false);
 
   const isNewUser = email && !hasUserRegistered(email);
 
@@ -158,12 +160,25 @@ export const LoginScreen = ({ onLogin, hasUserRegistered }: LoginScreenProps) =>
             </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-border">
+          <div className="mt-8 pt-6 border-t border-border space-y-3">
+            <button
+              type="button"
+              onClick={() => setIsPasswordResetOpen(true)}
+              className="text-sm text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-1 mx-auto"
+            >
+              <KeyRound className="w-4 h-4" />
+              Esqueci minha senha
+            </button>
             <p className="text-xs text-muted-foreground">
               Acesso exclusivo para membros da família
             </p>
           </div>
         </Card>
+        
+        <PasswordReset
+          isOpen={isPasswordResetOpen}
+          onClose={() => setIsPasswordResetOpen(false)}
+        />
       </div>
 
       {/* Add shake animation */}

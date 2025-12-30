@@ -43,7 +43,7 @@ export const usePhotos = () => {
     }
   }, []);
 
-  const addPhotos = (newPhotos: Omit<Photo, 'id' | 'createdAt'>[]) => {
+  const addPhotos = (newPhotos: Omit<Photo, 'id' | 'createdAt'>[], onPhotosAdded?: (count: number) => void) => {
     const photosWithIds = newPhotos.map(photo => ({
       ...photo,
       id: crypto.randomUUID(),
@@ -56,6 +56,11 @@ export const usePhotos = () => {
 
     const uniqueChildren = [...new Set(updatedPhotos.map(p => p.childName))];
     setChildren(uniqueChildren);
+    
+    // Notify about the new count for cross-tab notifications
+    if (onPhotosAdded) {
+      onPhotosAdded(updatedPhotos.length);
+    }
   };
 
   const updatePhoto = (id: string, updates: Partial<Photo>) => {

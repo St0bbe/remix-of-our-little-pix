@@ -16,6 +16,7 @@ import { EditPhotoModal } from '@/components/EditPhotoModal';
 import { BackupExport } from '@/components/BackupExport';
 import { PrintMode } from '@/components/PrintMode';
 import { usePhotos } from '@/hooks/usePhotos';
+import { usePhotoNotifications } from '@/hooks/usePhotoNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,6 +35,7 @@ const Index = () => {
   } = usePhotos();
   
   const { isAuthenticated, isLoading, currentUser, login, logout, changePassword, hasUserRegistered } = useAuth();
+  const { updatePhotoCount } = usePhotoNotifications();
   
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCreateAlbumOpen, setIsCreateAlbumOpen] = useState(false);
@@ -382,6 +384,7 @@ const Index = () => {
         onUpload={addPhotos}
         existingChildren={children}
         albums={albums}
+        onPhotosAdded={updatePhotoCount}
       />
 
       <CreateAlbumModal
