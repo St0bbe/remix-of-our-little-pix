@@ -4,12 +4,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, User, Download } from 'lucide-react';
+import { Calendar, User, Download, Heart, Share2, Check, Copy } from 'lucide-react';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface PhotoViewerProps {
   photo: Photo | null;
   isOpen: boolean;
   onClose: () => void;
+  onToggleFavorite?: (id: string) => void;
+  onShare?: (photoId: string) => string;
 }
 
 const downloadPhoto = (photo: Photo) => {
@@ -21,12 +25,25 @@ const downloadPhoto = (photo: Photo) => {
   document.body.removeChild(link);
 };
 
-export const PhotoViewer = ({ photo, isOpen, onClose }: PhotoViewerProps) => {
+export const PhotoViewer = ({ photo, isOpen, onClose, onToggleFavorite, onShare }: PhotoViewerProps) => {
+  const [copied, setCopied] = useState(false);
+
   if (!photo) return null;
 
   const formattedDate = format(new Date(photo.date), "d 'de' MMMM 'de' yyyy", {
     locale: ptBR,
   });
+
+  const handleShare = () => {
+    if (onShare) {
+      const linkId = onShare(photo.id);
+      const shareUrl = `${window.location.origin}${window.location.pathname}?share=${linkId}`;
+      navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast.success('Link copiado para a área de transferência!');
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -37,6 +54,11 @@ export const PhotoViewer = ({ photo, isOpen, onClose }: PhotoViewerProps) => {
             alt={photo.title || `Foto de ${photo.childName}`}
             className="w-full max-h-[70vh] object-contain bg-foreground/5"
           />
+          {photo.isFavorite && (
+            <div className="absolute top-4 left-4">
+              <Heart className="w-8 h-8 text-primary fill-primary drop-shadow-lg" />
+            </div>
+          )}
         </div>
         
         <div className="p-6 space-y-4">
@@ -49,6 +71,26 @@ export const PhotoViewer = ({ photo, isOpen, onClose }: PhotoViewerProps) => {
               <Badge variant="secondary" className="text-sm">
                 {categoryLabels[photo.category]}
               </Badge>
+              {onToggleFavorite && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => onToggleFavorite(photo.id)}
+                >
+                  <Heart className={`w-4 h-4 mr-1 ${photo.isFavorite ? 'fill-primary text-primary' : ''}`} />
+                  {photo.isFavorite ? 'Favorita' : 'Favoritar'}
+                </Button>
+              )}
+              {onShare && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={handleShare}
+                >
+                  {copied ? <Check className="w-4 h-4 mr-1" /> : <Share2 className="w-4 h-4 mr-1" />}
+                  {copied ? 'Copiado!' : 'Compartilhar'}
+                </Button>
+              )}
               <Button 
                 size="sm" 
                 variant="outline"

@@ -8,12 +8,23 @@ interface PhotoGridProps {
   photos: Photo[];
   onDelete: (id: string) => void;
   onView: (photo: Photo) => void;
+  onToggleFavorite?: (id: string) => void;
   selectionMode?: boolean;
   selectedPhotos?: Set<string>;
   onToggleSelect?: (id: string) => void;
+  emptyMessage?: string;
 }
 
-export const PhotoGrid = ({ photos, onDelete, onView, selectionMode, selectedPhotos, onToggleSelect }: PhotoGridProps) => {
+export const PhotoGrid = ({ 
+  photos, 
+  onDelete, 
+  onView, 
+  onToggleFavorite,
+  selectionMode, 
+  selectedPhotos, 
+  onToggleSelect,
+  emptyMessage = "Clique no botão \"Adicionar Fotos\" para começar a criar memórias lindas da sua família!"
+}: PhotoGridProps) => {
   if (photos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
@@ -24,7 +35,7 @@ export const PhotoGrid = ({ photos, onDelete, onView, selectionMode, selectedPho
           Nenhuma foto ainda
         </h3>
         <p className="text-muted-foreground max-w-md">
-          Clique no botão "Adicionar Fotos" para começar a criar memórias lindas da sua família!
+          {emptyMessage}
         </p>
       </div>
     );
@@ -59,6 +70,7 @@ export const PhotoGrid = ({ photos, onDelete, onView, selectionMode, selectedPho
                     photo={photo}
                     onDelete={onDelete}
                     onView={onView}
+                    onToggleFavorite={onToggleFavorite}
                     selectionMode={selectionMode}
                     isSelected={selectedPhotos?.has(photo.id)}
                     onToggleSelect={onToggleSelect}

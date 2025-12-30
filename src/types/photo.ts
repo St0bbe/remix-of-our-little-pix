@@ -11,6 +11,7 @@ export interface Photo {
   title?: string;
   description?: string;
   albumId?: string;
+  isFavorite?: boolean;
   createdAt: string;
 }
 
@@ -21,6 +22,14 @@ export interface Album {
   coverPhotoId?: string;
   color: string;
   icon: string;
+  isPublic?: boolean;
+  createdAt: string;
+}
+
+export interface SharedLink {
+  id: string;
+  type: 'photo' | 'album';
+  targetId: string;
   createdAt: string;
 }
 
