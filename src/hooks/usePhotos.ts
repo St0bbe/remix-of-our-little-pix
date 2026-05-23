@@ -369,7 +369,7 @@ export const usePhotos = () => {
   };
 
   const updatePhoto = async (id: string, updates: Partial<Photo>) => {
-    const dbUpdates: Record<string, unknown> = {};
+    const dbUpdates: Record<string, any> = {};
     
     if (updates.title !== undefined) dbUpdates.title = updates.title;
     if (updates.description !== undefined) dbUpdates.description = updates.description;
