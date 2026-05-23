@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Heart, Lock, Eye, EyeOff, Camera, Baby, Mail, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { PasswordReset } from './PasswordReset';
+import PWAInstallButton from './PWAInstallButton';
 
 interface LoginScreenProps {
   onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -158,6 +159,8 @@ export const LoginScreen = ({ onLogin, hasUserRegistered }: LoginScreenProps) =>
             <Button type="submit" className="w-full gradient-primary h-12 text-lg" size="lg">
               {isNewUser ? 'Criar Conta e Entrar' : 'Entrar'}
             </Button>
+
+            <PWAInstallButton />
           </form>
 
           <div className="mt-8 pt-6 border-t border-border space-y-3">

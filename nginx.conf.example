@@ -1,0 +1,23 @@
+server {
+    listen 80;
+    server_name dominio.com www.dominio.com;
+
+    root /var/www/remix-of-our-little-pix/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /manifest.webmanifest {
+        add_header Cache-Control "no-cache";
+    }
+
+    location /sw.js {
+        add_header Cache-Control "no-cache";
+    }
+
+    location /workbox-*.js {
+        add_header Cache-Control "no-cache";
+    }
+}

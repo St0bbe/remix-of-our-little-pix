@@ -8,7 +8,7 @@ import { Heart, Lock, Eye, EyeOff, Camera, Baby, Mail, User } from 'lucide-react
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { emailSchema, passwordSchema } from '@/lib/validation';
-import { InstallPWA } from '@/components/InstallPWA';
+import PWAInstallButton from '@/components/PWAInstallButton';
 
 type AuthMode = 'signin' | 'signup' | 'recovery' | 'reset';
 
@@ -218,9 +218,6 @@ const Auth = () => {
       </div>
 
       <div className="relative w-full max-w-md">
-        <div className="flex justify-center mb-4">
-          <InstallPWA />
-        </div>
         {/* Floating icons */}
         <div className="absolute -top-8 -left-8 w-16 h-16 rounded-full bg-card shadow-card flex items-center justify-center animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}>
           <Camera className="w-8 h-8 text-primary" />
@@ -356,6 +353,8 @@ const Auth = () => {
             >
               {isLoading ? 'Aguarde...' : getTitle()}
             </Button>
+
+            <PWAInstallButton />
           </form>
 
           <div className="mt-8 pt-6 border-t border-border space-y-3">
