@@ -26,6 +26,7 @@ import { Photo, PhotoCategory } from '@/types/photo';
 import { Plus, Camera, Heart, Grid, Clock, FolderHeart, Download, Settings, LogOut, Star, BarChart3, Play, MoreHorizontal, FileArchive, Printer, Activity } from 'lucide-react';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
+import { InstallPWA } from '@/components/InstallPWA';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -294,6 +295,7 @@ const Index = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <InstallPWA />
         </div>
 
         {/* Tabs */}
