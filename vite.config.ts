@@ -16,19 +16,37 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      injectRegister: false,
+      devOptions: {
+        enabled: true,
+        type: "module",
+      },
+      includeAssets: ["favicon.ico", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
         name: "Nossa Família",
-        short_name: "Nossa Família",
-        description: "Family Album Vault: organize, compartilhe e guarde as memorias da familia com seguranca.",
+        short_name: "Família",
+        description: "Organize, compartilhe e guarde as memorias da familia com seguranca.",
         theme_color: "#e11d48",
         background_color: "#ffffff",
         display: "standalone",
+        orientation: "portrait",
+        scope: "/",
+        start_url: "/",
         icons: [
           {
-            src: "/favicon.ico",
-            sizes: "64x64 32x32 24x24 16x16",
-            type: "image/x-icon",
+            src: "/pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
           },
           {
             src: "/apple-touch-icon.png",
@@ -38,29 +56,11 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        cacheId: "nossa-familia-v2",
-        clientsClaim: true,
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
         cleanupOutdatedCaches: true,
-        globIgnores: ["**/index.html"],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2,webmanifest}"],
-        navigateFallback: null,
-        runtimeCaching: [
-          {
-            urlPattern: ({ request }) => request.mode === "navigate",
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "nossa-familia-pages-v2",
-              networkTimeoutSeconds: 3,
-              cacheableResponse: {
-                statuses: [200],
-              },
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 5,
-              },
-            },
-          },
-        ],
+        clientsClaim: true,
+        skipWaiting: true,
+        navigateFallback: "index.html",
       },
     }),
   ].filter(Boolean),
