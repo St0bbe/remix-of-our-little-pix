@@ -16,10 +16,8 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      devOptions: {
-        enabled: true,
-      },
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
+      injectRegister: false,
       manifest: {
         name: "Nossa Família",
         short_name: "Família",
@@ -59,7 +57,7 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
-        navigateFallback: "index.html",
+        navigateFallback: "/index.html",
       },
     }),
   ].filter(Boolean),
