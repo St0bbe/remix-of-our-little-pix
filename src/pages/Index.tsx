@@ -109,43 +109,53 @@ const Index = () => {
   };
 
   const downloadSelectedPhotos = async () => {
-    if (selectedPhotos.size === 0) {
-      toast.error('Selecione pelo menos uma foto');
+    if (isDownloading || selectedPhotos.size === 0) {
+      if (selectedPhotos.size === 0) toast.error('Selecione pelo menos uma foto');
       return;
     }
 
-    toast.loading('Preparando download...');
+    setIsDownloading(true);
+    const downloadToastId = toast.loading('Preparando download...');
     
-    const selectedPhotosList = photos.filter(p => selectedPhotos.has(p.id));
-    
-    if (selectedPhotosList.length === 1) {
-      const photo = selectedPhotosList[0];
-      const link = document.createElement('a');
-      link.href = photo.url;
-      link.download = `${photo.childName}-${photo.date}.jpg`;
-      link.click();
-      toast.dismiss();
-      toast.success('Foto baixada!');
-    } else {
-      const zip = new JSZip();
-      selectedPhotosList.forEach((photo, i) => {
-        const base64Data = photo.url.split(',')[1];
-        zip.file(`foto-${i + 1}-${photo.date}.jpg`, base64Data, { base64: true });
-      });
+    try {
+      const selectedPhotosList = photos.filter(p => selectedPhotos.has(p.id));
       
-      const blob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'fotos-familia.zip';
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.dismiss();
-      toast.success(`${selectedPhotosList.length} fotos baixadas!`);
+      if (selectedPhotosList.length === 1) {
+        const photo = selectedPhotosList[0];
+        const link = document.createElement('a');
+        link.href = photo.url;
+        link.download = `${photo.childName}-${photo.date}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Foto baixada!', { id: downloadToastId });
+      } else {
+        const zip = new JSZip();
+        selectedPhotosList.forEach((photo, i) => {
+          const base64Data = photo.url.split(',')[1];
+          zip.file(`foto-${i + 1}-${photo.date}.jpg`, base64Data, { base64: true });
+        });
+        
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'fotos-familia.zip';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success(`${selectedPhotosList.length} fotos baixadas!`, { id: downloadToastId });
+      }
+      
+      setSelectedPhotos(new Set());
+      setSelectionMode(false);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Erro ao baixar fotos', { id: downloadToastId });
+    } finally {
+      setIsDownloading(false);
     }
-    
-    setSelectedPhotos(new Set());
-    setSelectionMode(false);
   };
 
   const handleSharePhoto = (photoId: string) => {
