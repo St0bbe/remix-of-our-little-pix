@@ -19,7 +19,11 @@ const PWAInstallButton = ({ className }: PWAInstallButtonProps) => {
       type="button"
       variant="outline"
       size="lg"
-      onClick={promptInstall}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        promptInstall();
+      }}
       className={cn(
         "w-full h-12 border-primary/30 bg-background/80 text-primary shadow-soft hover:bg-primary/10 hover:text-primary",
         className,
