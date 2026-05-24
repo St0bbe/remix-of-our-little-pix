@@ -16,13 +16,32 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      injectRegister: "auto",
+      injectRegister: false,
       manifest: false,
       workbox: {
-        cacheId: "nossa-familia-v1",
+        cacheId: "nossa-familia-v2",
+        clientsClaim: true,
         cleanupOutdatedCaches: true,
-        navigateFallback: "/index.html",
+        globIgnores: ["**/index.html"],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2,webmanifest}"],
+        navigateFallback: null,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "nossa-familia-pages-v2",
+              networkTimeoutSeconds: 3,
+              cacheableResponse: {
+                statuses: [200],
+              },
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 5,
+              },
+            },
+          },
+        ],
       },
     }),
   ].filter(Boolean),
