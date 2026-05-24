@@ -55,6 +55,7 @@ const Index = () => {
   const [slideshowStartIndex, setSlideshowStartIndex] = useState(0);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
   const [isPrintModeOpen, setIsPrintModeOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Check for shared link
   const [sharedContent, setSharedContent] = useState<ReturnType<typeof getSharedContent>>(null);
