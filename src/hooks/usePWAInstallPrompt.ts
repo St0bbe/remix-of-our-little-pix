@@ -1,70 +1,62 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { toast } from 'sonner';
+import { usePWAInstall } from '@/contexts/PWAInstallContext';
 
-type BeforeInstallPromptChoice = {
-  outcome: 'accepted' | 'dismissed';
-  platform: string;
+const isIOS = () =>
+  /iphone|ipad|ipod/i.test(window.navigator.userAgent) ||
+  (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+
+const isAndroid = () => /android/i.test(window.navigator.userAgent);
+
+const isSecurePWAOrigin = () =>
+  window.isSecureContext ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1';
+
+const getManualInstallInstructions = () => {
+  if (isIOS()) {
+    return 'iPhone Safari: Compartilhar > Adicionar à Tela de Início';
+  }
+
+  if (isAndroid()) {
+    return 'Android Chrome: menu ⋮ > Adicionar à tela inicial ou Instalar app';
+  }
+
+  return 'Chrome Desktop: menu ⋮ > Transmitir, salvar e compartilhar > Instalar página como app';
 };
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<BeforeInstallPromptChoice>;
-};
-
-const isStandaloneDisplayMode = () =>
-  window.matchMedia('(display-mode: standalone)').matches ||
-  window.matchMedia('(display-mode: fullscreen)').matches ||
-  window.matchMedia('(display-mode: minimal-ui)').matches;
 
 export const usePWAInstallPrompt = () => {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-
-  useEffect(() => {
-    const standaloneQuery = window.matchMedia('(display-mode: standalone)');
-
-    const updateInstalledState = () => {
-      setIsInstalled(isStandaloneDisplayMode());
-    };
-
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-
-      if (!isStandaloneDisplayMode()) {
-        setDeferredPrompt(event as BeforeInstallPromptEvent);
-      }
-    };
-
-    const handleAppInstalled = () => {
-      setDeferredPrompt(null);
-      setIsInstalled(true);
-    };
-
-    updateInstalledState();
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-    standaloneQuery.addEventListener('change', updateInstalledState);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-      standaloneQuery.removeEventListener('change', updateInstalledState);
-    };
-  }, []);
+  const {
+    deferredPrompt,
+    isInstalled,
+    isStandalone,
+    consumeDeferredPrompt,
+  } = usePWAInstall();
 
   const promptInstall = useCallback(async () => {
-    if (!deferredPrompt) {
+    console.log('PWA install clicked');
+
+    const prompt = consumeDeferredPrompt();
+
+    if (!prompt) {
+      const secureOriginMessage = isSecurePWAOrigin()
+        ? ''
+        : ' O PWA precisa estar em HTTPS para instalar.';
+
+      toast.info('Instale manualmente', {
+        description: `${getManualInstallInstructions()}${secureOriginMessage}`,
+        duration: 9000,
+      });
       return;
     }
 
-    await deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-  }, [deferredPrompt]);
+    await prompt.prompt();
+    await prompt.userChoice;
+  }, [consumeDeferredPrompt]);
 
   return {
-    canInstall: Boolean(deferredPrompt) && !isInstalled,
+    canInstall: !isInstalled && !isStandalone,
+    hasNativePrompt: Boolean(deferredPrompt),
     promptInstall,
   };
 };

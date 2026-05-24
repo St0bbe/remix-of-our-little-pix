@@ -1,8 +1,13 @@
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePWAInstallPrompt } from '@/hooks/usePWAInstallPrompt';
+import { cn } from '@/lib/utils';
 
-const PWAInstallButton = () => {
+type PWAInstallButtonProps = {
+  className?: string;
+};
+
+const PWAInstallButton = ({ className }: PWAInstallButtonProps) => {
   const { canInstall, promptInstall } = usePWAInstallPrompt();
 
   if (!canInstall) {
@@ -15,10 +20,13 @@ const PWAInstallButton = () => {
       variant="outline"
       size="lg"
       onClick={promptInstall}
-      className="w-full h-12 border-primary/30 bg-background/80 text-primary shadow-soft hover:bg-primary/10 hover:text-primary"
+      className={cn(
+        "w-full h-12 border-primary/30 bg-background/80 text-primary shadow-soft hover:bg-primary/10 hover:text-primary",
+        className,
+      )}
     >
       <Download className="w-5 h-5" />
-      Instalar app
+      Baixar app
     </Button>
   );
 };
