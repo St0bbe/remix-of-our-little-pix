@@ -23,6 +23,7 @@ let isInstalled = false;
 let initialized = false;
 let standaloneLogged = false;
 let standaloneQuery: MediaQueryList | null = null;
+let currentSnapshot: PWAInstallSnapshot | null = null;
 
 const isBrowser = typeof window !== 'undefined';
 const installedStorageKey = 'nossa-familia-pwa-installed';
@@ -53,6 +54,7 @@ const isStandaloneDisplayMode = () => {
 };
 
 const emitChange = () => {
+  currentSnapshot = null;
   listeners.forEach((listener) => listener());
 };
 
@@ -103,14 +105,20 @@ export const initializePWAInstall = () => {
 };
 
 export const getPWAInstallSnapshot = (): PWAInstallSnapshot => {
+  if (currentSnapshot) {
+    return currentSnapshot;
+  }
+
   const isStandalone = isStandaloneDisplayMode();
 
-  return {
+  currentSnapshot = {
     deferredPrompt,
     isInstalled: isInstalled || isStandalone || hasInstalledMarker(),
     isStandalone,
     isInstallAvailable: Boolean(deferredPrompt) && !isStandalone,
   };
+
+  return currentSnapshot;
 };
 
 export const subscribeToPWAInstall = (listener: () => void) => {

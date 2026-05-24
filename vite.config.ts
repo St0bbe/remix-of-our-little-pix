@@ -17,7 +17,26 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: false,
-      manifest: false,
+      manifest: {
+        name: "Nossa Família",
+        short_name: "Nossa Família",
+        description: "Family Album Vault: organize, compartilhe e guarde as memorias da familia com seguranca.",
+        theme_color: "#e11d48",
+        background_color: "#ffffff",
+        display: "standalone",
+        icons: [
+          {
+            src: "/favicon.ico",
+            sizes: "64x64 32x32 24x24 16x16",
+            type: "image/x-icon",
+          },
+          {
+            src: "/apple-touch-icon.png",
+            sizes: "180x180",
+            type: "image/png",
+          },
+        ],
+      },
       workbox: {
         cacheId: "nossa-familia-v2",
         clientsClaim: true,
